@@ -1,7 +1,0 @@
-{
-  "name": "Findlt – Smart Campus Lost & Found Management System",
-  "description": "Smart, secure campus lost and found management platform for students, faculty, and administrative security staff to report, track, claim, and recover belongings.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
-
