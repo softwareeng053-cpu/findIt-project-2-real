@@ -1,4 +1,3 @@
-
 import datetime
 import jwt
 from urllib.parse import urlparse
@@ -43,6 +42,12 @@ def clean_text(value, max_length=None):
         value = value[:max_length]
 
     return value
+
+
+def resolve_db_user_id(raw_user_id):
+    if not raw_user_id or str(raw_user_id) == 'env-admin':
+        return None
+    return raw_user_id
 
 
 def process_item_image(raw_image):
@@ -115,6 +120,13 @@ def get_optional_verified_user(client):
         if not user_id:
             return None
 
+        if str(user_id) == 'env-admin':
+            return {
+                'userId': 'env-admin',
+                'role': 'admin',
+                'account_status': 'active'
+            }
+
         result = (
             client.table('profiles')
             .select('id, role, account_status')
@@ -143,9 +155,13 @@ def get_optional_verified_user(client):
 
 
 def create_notification(client, user_id, title, message):
+    db_user_id = resolve_db_user_id(user_id)
+    if not db_user_id:
+        return
+
     try:
         client.table('notifications').insert({
-            'user_id': user_id,
+            'user_id': db_user_id,
             'title': title,
             'message': message,
             'notification_type': 'report_created'
@@ -428,8 +444,10 @@ def report_lost_item():
     except ValueError as error:
         return jsonify({'error': str(error)}), 400
 
+    db_user_id = resolve_db_user_id(user.get('userId'))
+
     new_item = {
-        'user_id': user['userId'],
+        'user_id': db_user_id,
         'item_name': item_name,
         'category': category,
         'item_type': 'lost',
@@ -460,7 +478,7 @@ def report_lost_item():
 
         create_notification(
             client,
-            user['userId'],
+            db_user_id,
             'Lost Item Report Published',
             f"Your report for '{item_name}' is active on the campus directory."
         )
@@ -520,8 +538,10 @@ def report_found_item():
     except ValueError as error:
         return jsonify({'error': str(error)}), 400
 
+    db_user_id = resolve_db_user_id(user.get('userId'))
+
     new_item = {
-        'user_id': user['userId'],
+        'user_id': db_user_id,
         'item_name': item_name,
         'category': category,
         'item_type': 'found',
@@ -556,7 +576,7 @@ def report_found_item():
 
         create_notification(
             client,
-            user['userId'],
+            db_user_id,
             'Found Item Registered',
             f"Thank you for logging '{item_name}'. Verified owners can now request a claim."
         )
